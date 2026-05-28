@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { loginWithEmail } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Alert, AlertDescription } from './ui/alert';
 
 interface AuthLoginProps {
-  onLoginSuccess: (userId: string, role: string) => void;
+  onLoginSuccess: (userId: string, userEmail: string, role: string) => void;
 }
 
 const AuthLogin: React.FC<AuthLoginProps> = ({ onLoginSuccess }) => {
@@ -25,132 +28,82 @@ const AuthLogin: React.FC<AuthLoginProps> = ({ onLoginSuccess }) => {
     setError('');
 
     try {
-      // 1. Login with Firebase Auth
-      const userCredential = await loginWithEmail(email, password);
-      const user = userCredential.user;
-
-      // 2. Fetch user role from Firestore 'users' collection
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      let role = 'user'; // Default role
-      if (userDocSnap.exists()) {
-        role = userDocSnap.data().role || 'user';
-      } else {
-        // If no user doc exists, create one (for testing purposes)
-        // In production, you'd want an admin to create users
-        role = 'vendor'; 
-      }
-
-      // 3. Pass ID and Role to the main App
-      onLoginSuccess(user.uid, role);
+      // Call Firebase login
+      const user = await loginWithEmail(email, password);
+      
+      // Successfully logged in
+      // We pass the user UID, email, and a default role (you can refine role logic later)
+      onLoginSuccess(user.uid, user.email || '', 'vendor'); 
       
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Login failed. Check your credentials.');
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      minHeight: '100vh', 
-      backgroundColor: '#121212', 
-      color: 'white',
-      padding: '20px'
-    }}>
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '400px', 
-        padding: '30px', 
-        backgroundColor: '#1e1e1e', 
-        borderRadius: '12px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
-      }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '24px', color: '#2563eb' }}>CCTV Manager</h2>
-        
-        {error && (
-          <div style={{ 
-            backgroundColor: '#fee2e2', 
-            color: '#991b1b', 
-            padding: '12px', 
-            borderRadius: '6px', 
-            marginBottom: '16px',
-            fontSize: '14px'
-          }}>
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', color: '#aaa' }}>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-              placeholder="admin@cctv.com"
-              style={{ 
-                width: '100%', 
-                padding: '12px', 
-                borderRadius: '6px', 
-                border: '1px solid #444', 
-                backgroundColor: '#2c2c2c', 
-                color: 'white',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <Card className="w-full max-w-md mx-auto bg-card text-card-foreground shadow-xl">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold tracking-tight">Welcome Back</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Enter your credentials to access your CCTV business dashboard
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <Alert className="mb-4 bg-red-900/20 border-red-800">
+              <AlertDescription className="text-red-400">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
           
-          <div>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', color: '#aaa' }}>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              placeholder="••••••••"
-              style={{ 
-                width: '100%', 
-                padding: '12px', 
-                borderRadius: '6px', 
-                border: '1px solid #444', 
-                backgroundColor: '#2c2c2c', 
-                color: 'white',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={loading}
-            style={{ 
-              padding: '14px', 
-              backgroundColor: loading ? '#555' : '#2563eb', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '6px', 
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontWeight: 'bold',
-              fontSize: '16px',
-              marginTop: '8px'
-            }}
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-        
-        <p style={{ marginTop: '20px', textAlign: 'center', fontSize: '13px', color: '#666' }}>
-          Use your registered email and password.
-        </p>
-      </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                className="bg-input text-input-foreground"
+                autoComplete="email"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                className="bg-input text-input-foreground"
+                autoComplete="current-password"
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full py-3 text-lg font-semibold mt-2"
+            >
+              {loading ? 'Signing In...' : 'Sign In'}
+            </Button>
+          </form>
+          
+          <p className="text-xs text-center text-muted-foreground mt-6">
+            Protected by Firebase Authentication
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
