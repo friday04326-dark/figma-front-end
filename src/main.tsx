@@ -1,7 +1,10 @@
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import Dashboard from './app/components/Dashboard'
+import './index.css' // Keep your global styles
 
-  import { createRoot } from "react-dom/client";
-  import App from "./app/App.tsx";
-  import "./styles/index.css";
-
-  createRoot(document.getElementById("root")!).render(<App />);
-  
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <Dashboard />
+  </React.StrictMode>,
+)
