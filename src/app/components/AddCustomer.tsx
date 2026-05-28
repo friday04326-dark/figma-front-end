@@ -1,159 +1,129 @@
-import { useState } from "react";
-import { ArrowLeft, User, Phone, MapPin, Camera, FileText, Check } from "lucide-react";
+import React, { useState } from 'react';
+import { addCustomer } from '../../firebase';
 
 interface AddCustomerProps {
-  onNavigate: (screen: string, data?: any) => void;
+  userId: string;
+  onCustomerAdded: () => void;
 }
 
-export function AddCustomer({ onNavigate }: AddCustomerProps) {
-  const [saved, setSaved] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    address: "",
-    siteDetails: "",
-    notes: "",
-  });
+const AddCustomer: React.FC<AddCustomerProps> = ({ userId, onCustomerAdded }) => {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!name || !phone) {
+      setError('Name and Phone are required');
+      return;
+    }
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => {
-      onNavigate("customers");
-    }, 1200);
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await addCustomer({
+        name,
+        phone,
+        email,
+        address
+      }, userId);
+      
+      setSuccess('Customer added successfully!');
+      setName('');
+      setPhone('');
+      setEmail('');
+      setAddress('');
+      
+      setTimeout(() => {
+        setSuccess('');
+        onCustomerAdded();
+      }, 2000);
+      
+    } catch (err: any) {
+      setError(err.message || 'Failed to add customer');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const isValid = form.name.trim() && form.phone.trim() && form.address.trim();
-
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="px-5 pt-6 pb-4 flex items-center gap-4 flex-shrink-0">
-        <button
-          className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
-          style={{ background: "rgba(30,41,59,0.8)", border: "1px solid rgba(255,255,255,0.08)" }}
-          onClick={() => onNavigate("customers")}
+    <div style={{ 
+      padding: '20px', 
+      backgroundColor: '#1e1e1e', 
+      borderRadius: '8px', 
+      color: 'white',
+      maxWidth: '400px',
+      margin: '0 auto'
+    }}>
+      <h3 style={{ marginTop: 0 }}>Add New Customer</h3>
+      
+      {error && <div style={{ color: '#ff6b6b', marginBottom: '10px' }}>{error}</div>}
+      {success && <div style={{ color: '#51cf66', marginBottom: '10px' }}>{success}</div>}
+      
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <input
+          type="text"
+          placeholder="Full Name *"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          disabled={loading}
+          style={{ padding: '10px', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#2c2c2c', color: 'white' }}
+        />
+        
+        <input
+          type="tel"
+          placeholder="Phone Number *"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          required
+          disabled={loading}
+          style={{ padding: '10px', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#2c2c2c', color: 'white' }}
+        />
+        
+        <input
+          type="email"
+          placeholder="Email (Optional)"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={loading}
+          style={{ padding: '10px', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#2c2c2c', color: 'white' }}
+        />
+        
+        <textarea
+          placeholder="Address / Site Details"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          disabled={loading}
+          rows={3}
+          style={{ padding: '10px', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#2c2c2c', color: 'white' }}
+        />
+        
+        <button 
+          type="submit" 
+          disabled={loading}
+          style={{ 
+            padding: '12px', 
+            backgroundColor: loading ? '#555' : '#007bff', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '4px', 
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontWeight: 'bold'
+          }}
         >
-          <ArrowLeft size={18} className="text-white" />
+          {loading ? 'Saving...' : 'Save Customer'}
         </button>
-        <div>
-          <h1 className="text-white">Add Customer</h1>
-          <p className="text-[#6b7280]" style={{ fontSize: 13 }}>Fill in customer details</p>
-        </div>
-      </div>
-
-      {/* Form */}
-      <div className="flex-1 overflow-y-auto px-5 pb-6">
-        <div className="flex flex-col gap-4">
-
-          {/* Name */}
-          <div>
-            <label className="block text-[#9ca3af] mb-2" style={{ fontSize: 13 }}>Customer Name *</label>
-            <div className="relative">
-              <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4b5563]" />
-              <input
-                type="text"
-                placeholder="e.g. Al-Farooq Mart"
-                value={form.name}
-                onChange={(e) => update("name", e.target.value)}
-                className="w-full pl-11 pr-4 py-4 rounded-2xl text-white placeholder-[#374151] outline-none"
-                style={{ background: "rgba(30,41,59,0.8)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 14 }}
-              />
-            </div>
-          </div>
-
-          {/* Phone */}
-          <div>
-            <label className="block text-[#9ca3af] mb-2" style={{ fontSize: 13 }}>Phone Number *</label>
-            <div className="relative">
-              <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4b5563]" />
-              <input
-                type="tel"
-                placeholder="+91 98765 43210"
-                value={form.phone}
-                onChange={(e) => update("phone", e.target.value)}
-                className="w-full pl-11 pr-4 py-4 rounded-2xl text-white placeholder-[#374151] outline-none"
-                style={{ background: "rgba(30,41,59,0.8)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 14 }}
-              />
-            </div>
-          </div>
-
-          {/* Address */}
-          <div>
-            <label className="block text-[#9ca3af] mb-2" style={{ fontSize: 13 }}>Site Address *</label>
-            <div className="relative">
-              <MapPin size={16} className="absolute left-4 top-4 text-[#4b5563]" />
-              <textarea
-                placeholder="Full address of the site"
-                value={form.address}
-                onChange={(e) => update("address", e.target.value)}
-                rows={2}
-                className="w-full pl-11 pr-4 py-4 rounded-2xl text-white placeholder-[#374151] outline-none resize-none"
-                style={{ background: "rgba(30,41,59,0.8)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 14 }}
-              />
-            </div>
-          </div>
-
-          {/* Site Details */}
-          <div>
-            <label className="block text-[#9ca3af] mb-2" style={{ fontSize: 13 }}>Site Details</label>
-            <div className="relative">
-              <Camera size={16} className="absolute left-4 top-4 text-[#4b5563]" />
-              <textarea
-                placeholder="e.g. 8 cameras, 1 DVR, 500m cable"
-                value={form.siteDetails}
-                onChange={(e) => update("siteDetails", e.target.value)}
-                rows={2}
-                className="w-full pl-11 pr-4 py-4 rounded-2xl text-white placeholder-[#374151] outline-none resize-none"
-                style={{ background: "rgba(30,41,59,0.8)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 14 }}
-              />
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-[#9ca3af] mb-2" style={{ fontSize: 13 }}>Notes</label>
-            <div className="relative">
-              <FileText size={16} className="absolute left-4 top-4 text-[#4b5563]" />
-              <textarea
-                placeholder="Any special instructions or notes"
-                value={form.notes}
-                onChange={(e) => update("notes", e.target.value)}
-                rows={3}
-                className="w-full pl-11 pr-4 py-4 rounded-2xl text-white placeholder-[#374151] outline-none resize-none"
-                style={{ background: "rgba(30,41,59,0.8)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 14 }}
-              />
-            </div>
-          </div>
-
-          {/* Required hint */}
-          <p className="text-[#4b5563]" style={{ fontSize: 12 }}>* Required fields</p>
-
-          {/* Save Button */}
-          <button
-            className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
-            style={{
-              background: isValid
-                ? "linear-gradient(135deg, #0ea5e9, #06b6d4)"
-                : "rgba(30,41,59,0.6)",
-              opacity: isValid ? 1 : 0.5,
-              boxShadow: isValid ? "0 4px 24px rgba(14,165,233,0.35)" : "none",
-            }}
-            onClick={handleSave}
-            disabled={!isValid}
-          >
-            {saved ? (
-              <>
-                <Check size={18} className="text-white" />
-                <span className="text-white" style={{ fontWeight: 600, fontSize: 15 }}>Saved!</span>
-              </>
-            ) : (
-              <span className="text-white" style={{ fontWeight: 600, fontSize: 15 }}>Save Customer</span>
-            )}
-          </button>
-        </div>
-      </div>
+      </form>
     </div>
   );
-}
+};
+
+export default AddCustomer;
